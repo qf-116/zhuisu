@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>质量追溯</title>
+<link rel="stylesheet" href="mobile-common.css">
+<style>
+/* 工序流程图（追溯模式：所有工序统一样式） */
+.trace-flow{display:flex;align-items:center;overflow-x:auto;padding:14px 16px;margin:0 16px 12px;background:#fff;border-radius:10px;border:1px solid #f0f0f0}
+.trace-flow::-webkit-scrollbar{display:none}
+.tf-step{flex-shrink:0;text-align:center;padding:6px 14px;cursor:pointer;position:relative}
+.tf-step .tfc{width:30px;height:30px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#f0f5ff;color:#1890ff;border:1.5px solid #d6e4ff;transition:all .2s}
+.tf-step .tfn{font-size:11px;color:#86909c;white-space:nowrap}
+.tf-step.selected .tfc{background:#1890ff;color:#fff;border-color:#1890ff;box-shadow:0 0 0 4px rgba(24,144,255,0.15)}
+.tf-step.selected .tfn{color:#1890ff;font-weight:600}
+.tf-step.selected::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:14px;height:3px;background:#1890ff;border-radius:2px}
+.tf-arrow{flex-shrink:0;width:18px;color:#d9d9d9;font-size:14px;text-align:center}
+
+/* 产品头重点信息网格(覆盖默认2列flex) */
+.product-header .product-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 12px}
+.product-header .pm-item{min-width:0}
+.product-header .pm-item .pm-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 工序详情面板 */
+.gx-panel{display:none;animation:fadeIn .2s ease}
+.gx-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* 工序基本信息卡片 */
+.gx-info-card{background:#fff;border-radius:10px;margin:0 16px 12px;border:1px solid #f0f0f0;overflow:hidden}
+.gxic-header{padding:12px 14px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;justify-content:space-between}
+.gxic-header h4{font-size:14px;font-weight:600;color:#1d2129;display:flex;align-items:center;gap:6px}
+.gxic-body{padding:12px 14px}
+.gxic-row{display:flex;justify-content:space-between;padding:5px 0}
+.gxic-row .gxic-label{font-size:12px;color:#86909c}
+.gxic-row .gxic-val{font-size:12px;color:#1d2129;font-weight:500;text-align:right}
+
+/* 报工记录卡片 */
+.bg-list{padding:0 16px}
+.bg-card{background:#fff;border-radius:10px;border:1px solid #f0f0f0;margin-bottom:10px;overflow:hidden}
+.bgc-header{padding:12px 14px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;justify-content:space-between}
+.bgc-no{font-size:13px;font-weight:600;color:#1d2129;display:flex;align-items:center;gap:6px}
+.bgc-no .bgc-idx{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#e6f7ff;color:#1890ff;font-size:11px;font-weight:600}
+.bgc-time{font-size:11px;color:#86909c}
+.bgc-body{padding:10px 14px}
+.bgc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.bgc-cell .bgc-label{font-size:11px;color:#86909c}
+.bgc-cell .bgc-val{font-size:12px;color:#1d2129;font-weight:500}
+.bgc-cell .bgc-val.green{color:#52c41a}
+.bgc-cell .bgc-val.red{color:#ff4d4f}
+.bgc-footer{display:flex;border-top:1px solid #f5f5f5}
+.bgc-btn{flex:1;padding:10px;text-align:center;font-size:12px;color:#1890ff;cursor:pointer;font-weight:500}
+.bgc-btn:active{background:#fafafa}
+.bgc-btn svg{width:14px;height:14px;vertical-align:-2px;margin-right:4px}
+
+/* 主操作按钮 */
+.action-bar{padding:0 16px 16px}
+.action-btn{width:100%;height:44px;background:#fff;border:1px solid #e8e8e8;border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;cursor:pointer;transition:all .15s}
+.action-btn:active{background:#fafafa}
+.action-btn .ab-left{display:flex;align-items:center;gap:10px}
+.action-btn .ab-icon{width:30px;height:30px;border-radius:8px;background:#e6f7ff;color:#1890ff;display:flex;align-items:center;justify-content:center;font-size:14px}
+.action-btn .ab-text{font-size:13px;font-weight:500;color:#1d2129}
+.action-btn .ab-sub{font-size:11px;color:#86909c;margin-top:1px}
+.action-btn .ab-arrow{color:#d9d9d9;font-size:14px}
+
+/* 空状态 */
+.gx-empty{text-align:center;padding:32px 16px;color:#c0c0c0;font-size:13px;background:#fff;margin:0 16px;border-radius:10px;border:1px solid #f0f0f0}
+
+/* 状态标签 */
+.gx-tag{padding:1px 8px;border-radius:3px;font-size:11px;font-weight:500;margin-left:4px}
+.gx-tag.green{background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f}
+.gx-tag.blue{background:#e6f7ff;color:#1890ff;border:1px solid #91d5ff}
+.gx-tag.gray{background:#f5f5f5;color:#999;border:1px solid #e8e8e8}
+.gx-tag.red{background:#fff1f0;color:#ff4d4f;border:1px solid #ffa39e}
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="status-bar"><span class="time">9:41</span><span>📶 🔋</span></div>
+  <div class="nav-bar">
+    <div class="back" style="visibility:hidden"></div>
+    <div class="title">质量追溯</div>
+    <div class="action"></div>
+  </div>
+
+  <!-- 产品信息头 -->
+  <div class="product-header">
+    <div class="product-sn">序列号 SN2026050800001</div>
+    <div class="product-name">变频器SB200-11T4T</div>
+    <div class="product-model">物料编码: KJ040102-000061 / 物料型号: SB200</div>
+    <div class="product-meta">
+      <div class="pm-item"><span class="pm-label">合同号</span><span class="pm-value">HT2026-0508-001</span></div>
+      <div class="pm-item"><span class="pm-label">工程号</span><span class="pm-value">GC2026-0508-A</span></div>
+      <div class="pm-item"><span class="pm-label">产品图号</span><span class="pm-value">TZ-SB200-11T4T</span></div>
+      <div class="pm-item"><span class="pm-label">生产工单</span><span class="pm-value">SCGD202605080001</span></div>
+      <div class="pm-item"><span class="pm-label">生产批次</span><span class="pm-value">SL-20260508-00001</span></div>
+    </div>
+  </div>
+
+  <!-- 工单信息卡片 -->
+  <div class="process-card" style="margin-top:12px">
+    <div class="pc-header" onclick="toggleWO()">
+      <div class="pc-icon" style="background:#e6f7ff;color:#1890ff">&#9881;</div>
+      <div class="pc-info"><div class="pc-name">工单基本信息</div><div class="pc-sub">SCGD202605080001 · 已完工</div></div>
+      <span class="pc-arrow" id="woArrow" style="transition:transform .2s">&#8964;</span>
+    </div>
+    <div class="pc-body" id="woBody">
+      <div class="pc-row"><span class="pc-label">需求数量</span><span class="pc-value">40台</span></div>
+      <div class="pc-row"><span class="pc-label">实际完工数量</span><span class="pc-value">40台</span></div>
+      <div class="pc-row"><span class="pc-label">合格数量</span><span class="pc-value" style="color:#52c41a">38台</span></div>
+      <div class="pc-row"><span class="pc-label">计划开始</span><span class="pc-value">2026-05-08</span></div>
+      <div class="pc-row"><span class="pc-label">实际完工</span><span class="pc-value">2026-05-10 16:30</span></div>
+      <div style="border-top:1px solid #f5f5f5;margin-top:6px;padding-top:10px;text-align:center">
+        <a href="mobile-wo-detail.html" style="font-size:12px;color:#1890ff;text-decoration:none">查看更多 &#8250;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 工序流转 -->
+  <div style="padding:0 16px 6px;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:14px;font-weight:600">生产工序流转</span>
+    <span style="font-size:12px;color:#86909c">点击工序查看详情</span>
+  </div>
+  <div class="trace-flow" id="gxFlow">
+    <div class="tf-step" onclick="switchGx(0)"><div class="tfc">1</div><div class="tfn">装配</div></div>
+    <div class="tf-arrow">&#8250;</div>
+    <div class="tf-step" onclick="switchGx(1)"><div class="tfc">2</div><div class="tfn">调试</div></div>
+    <div class="tf-arrow">&#8250;</div>
+    <div class="tf-step" onclick="switchGx(2)"><div class="tfc">3</div><div class="tfn">老化</div></div>
+    <div class="tf-arrow">&#8250;</div>
+    <div class="tf-step" onclick="switchGx(3)"><div class="tfc">4</div><div class="tfn">包装</div></div>
+    <div class="tf-arrow">&#8250;</div>
+    <div class="tf-step" onclick="switchGx(4)"><div class="tfc">5</div><div class="tfn">入库</div></div>
+  </div>
+
+  <!-- ====== 工序1: 装配 ====== -->
+  <div class="gx-panel" id="gx0">
+    <div class="gx-info-card">
+      <div class="gxic-header">
+        <h4><span style="display:inline-block;width:4px;height:14px;background:#1890ff;border-radius:2px"></span>低压产品整机装配 <span class="gx-tag green">是</span></h4>
+      </div>
+      <div class="gxic-body">
+        <div class="gxic-row"><span class="gxic-label">任务编号</span><span class="gxic-val">SCGD202605080001-GX01</span></div>
+        <div class="gxic-row"><span class="gxic-label">任务负责人</span><span class="gxic-val">向洋</span></div>
+        <div class="gxic-row"><span class="gxic-label">生产班组</span><span class="gxic-val">低压装配班组</span></div>
+        <div class="gxic-row"><span class="gxic-label">完成数量</span><span class="gxic-val">40 / 40</span></div>
+        <div class="gxic-row"><span class="gxic-label">合格数量</span><span class="gxic-val" style="color:#52c41a">40</span></div>
+        <div class="gxic-row"><span class="gxic-label">实际开工</span><span class="gxic-val">2026-05-08 08:30</span></div>
+        <div class="gxic-row"><span class="gxic-label">实际完工</span><span class="gxic-val">2026-05-08 17:20</span></div>
+        <div class="gxic-row"><span class="gxic-label">报工方式</span><span class="gxic-val">自动报工</span></div>
+        <div class="gxic-row"><span class="gxic-label">是否质检</span><span class="gxic-val" style="color:#52c41a">是</span></div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-bottom:8px">报工记录 <span class="st-more">共2条</span></div>
+    <div class="bg-list">
+      <div class="bg-card">
+        <div class="bgc-header">
+          <span class="bgc-no"><span class="bgc-idx">1</span>第1次报工</span>
+          <span class="bgc-time">2026-05-08 12:00</span>
+        </div>
+        <div class="bgc-body">
+          <div class="bgc-grid">
+            <div class="bgc-cell"><span class="bgc-label">报工人</span><span class="bgc-val">向洋</span></div>
+            <div class="bgc-cell"><span class="bgc-label">所属班组</span><span class="bgc-val">低压装配班组</span></div>
+            <div class="bgc-cell"><span class="bgc-label">报工数量</span><span class="bgc-val">20</span></div>
+            <div class="bgc-cell"><span class="bgc-label">合格数量</span><span class="bgc-val green">20</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检状态</span><span class="bgc-val green">已质检-合格</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检员</span><span class="bgc-val">李俊</span></div>
+          </div>
+        </div>
+        <div class="bgc-footer">
+          <div class="bgc-btn" onclick="location.href='mobile-qc-detail.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>查看检验记录</div>
+        </div>
+      </div>
+      <div class="bg-card">
+        <div class="bgc-header">
+          <span class="bgc-no"><span class="bgc-idx">2</span>第2次报工</span>
+          <span class="bgc-time">2026-05-08 17:20</span>
+        </div>
+        <div class="bgc-body">
+          <div class="bgc-grid">
+            <div class="bgc-cell"><span class="bgc-label">报工人</span><span class="bgc-val">向洋</span></div>
+            <div class="bgc-cell"><span class="bgc-label">所属班组</span><span class="bgc-val">低压装配班组</span></div>
+            <div class="bgc-cell"><span class="bgc-label">报工数量</span><span class="bgc-val">20</span></div>
+            <div class="bgc-cell"><span class="bgc-label">合格数量</span><span class="bgc-val green">20</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检状态</span><span class="bgc-val green">已质检-合格</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检员</span><span class="bgc-val">李俊</span></div>
+          </div>
+        </div>
+        <div class="bgc-footer">
+          <div class="bgc-btn" onclick="location.href='mobile-qc-detail.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>查看检验记录</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 工序2: 调试 ====== -->
+  <div class="gx-panel" id="gx1">
+    <div class="gx-info-card">
+      <div class="gxic-header">
+        <h4><span style="display:inline-block;width:4px;height:14px;background:#1890ff;border-radius:2px"></span>整机调试 <span class="gx-tag green">是</span></h4>
+      </div>
+      <div class="gxic-body">
+        <div class="gxic-row"><span class="gxic-label">任务编号</span><span class="gxic-val">SCGD202605080001-GX02</span></div>
+        <div class="gxic-row"><span class="gxic-label">任务负责人</span><span class="gxic-val">张三</span></div>
+        <div class="gxic-row"><span class="gxic-label">生产班组</span><span class="gxic-val">调试班组</span></div>
+        <div class="gxic-row"><span class="gxic-label">完成数量</span><span class="gxic-val">40 / 40</span></div>
+        <div class="gxic-row"><span class="gxic-label">合格数量</span><span class="gxic-val" style="color:#52c41a">38</span></div>
+        <div class="gxic-row"><span class="gxic-label">不合格数量</span><span class="gxic-val" style="color:#ff4d4f">2</span></div>
+        <div class="gxic-row"><span class="gxic-label">实际开工</span><span class="gxic-val">2026-05-08 18:00</span></div>
+        <div class="gxic-row"><span class="gxic-label">实际完工</span><span class="gxic-val">2026-05-09 06:40</span></div>
+        <div class="gxic-row"><span class="gxic-label">报工方式</span><span class="gxic-val">人工报工</span></div>
+        <div class="gxic-row"><span class="gxic-label">是否质检</span><span class="gxic-val" style="color:#52c41a">是</span></div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-bottom:8px">报工记录 <span class="st-more">共1条</span></div>
+    <div class="bg-list">
+      <div class="bg-card">
+        <div class="bgc-header">
+          <span class="bgc-no"><span class="bgc-idx">1</span>第1次报工</span>
+          <span class="bgc-time">2026-05-09 06:40</span>
+        </div>
+        <div class="bgc-body">
+          <div class="bgc-grid">
+            <div class="bgc-cell"><span class="bgc-label">报工人</span><span class="bgc-val">张三</span></div>
+            <div class="bgc-cell"><span class="bgc-label">所属班组</span><span class="bgc-val">调试班组</span></div>
+            <div class="bgc-cell"><span class="bgc-label">报工数量</span><span class="bgc-val">40</span></div>
+            <div class="bgc-cell"><span class="bgc-label">合格数量</span><span class="bgc-val green">38</span></div>
+            <div class="bgc-cell"><span class="bgc-label">不合格数量</span><span class="bgc-val red">2</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检状态</span><span class="bgc-val red">已质检-不合格</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检员</span><span class="bgc-val">王冰冰</span></div>
+            <div class="bgc-cell"><span class="bgc-label">不合格处理单</span><span class="bgc-val red">NC20260509001</span></div>
+          </div>
+        </div>
+        <div class="bgc-footer">
+          <div class="bgc-btn" onclick="location.href='mobile-qc-detail.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>查看检验记录 <span style="background:#fff1f0;color:#ff4d4f;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:4px;font-weight:600">2份</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 工序3: 老化 ====== -->
+  <div class="gx-panel" id="gx2">
+    <div class="gx-info-card">
+      <div class="gxic-header">
+        <h4><span style="display:inline-block;width:4px;height:14px;background:#1890ff;border-radius:2px"></span>整机老化 <span class="gx-tag green">是</span></h4>
+      </div>
+      <div class="gxic-body">
+        <div class="gxic-row"><span class="gxic-label">任务编号</span><span class="gxic-val">SCGD202605080001-GX03</span></div>
+        <div class="gxic-row"><span class="gxic-label">任务负责人</span><span class="gxic-val">王五</span></div>
+        <div class="gxic-row"><span class="gxic-label">生产班组</span><span class="gxic-val">老化班组</span></div>
+        <div class="gxic-row"><span class="gxic-label">完成数量</span><span class="gxic-val">40 / 40</span></div>
+        <div class="gxic-row"><span class="gxic-label">合格数量</span><span class="gxic-val" style="color:#52c41a">40</span></div>
+        <div class="gxic-row"><span class="gxic-label">实际开工</span><span class="gxic-val">2026-05-09 08:00</span></div>
+        <div class="gxic-row"><span class="gxic-label">实际完工</span><span class="gxic-val">2026-05-10 08:00</span></div>
+        <div class="gxic-row"><span class="gxic-label">报工方式</span><span class="gxic-val">自动报工</span></div>
+        <div class="gxic-row"><span class="gxic-label">是否质检</span><span class="gxic-val" style="color:#52c41a">是</span></div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-bottom:8px">报工记录 <span class="st-more">共2条</span></div>
+    <div class="bg-list">
+      <div class="bg-card">
+        <div class="bgc-header">
+          <span class="bgc-no"><span class="bgc-idx">1</span>第1次报工</span>
+          <span class="bgc-time">2026-05-09 14:00</span>
+        </div>
+        <div class="bgc-body">
+          <div class="bgc-grid">
+            <div class="bgc-cell"><span class="bgc-label">报工人</span><span class="bgc-val">王五</span></div>
+            <div class="bgc-cell"><span class="bgc-label">所属班组</span><span class="bgc-val">老化班组</span></div>
+            <div class="bgc-cell"><span class="bgc-label">报工数量</span><span class="bgc-val">20</span></div>
+            <div class="bgc-cell"><span class="bgc-label">合格数量</span><span class="bgc-val green">20</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检状态</span><span class="bgc-val green">已质检-合格</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检员</span><span class="bgc-val">李梅</span></div>
+          </div>
+        </div>
+        <div class="bgc-footer">
+          <div class="bgc-btn" onclick="location.href='mobile-qc-detail.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>查看检验记录</div>
+        </div>
+      </div>
+      <div class="bg-card">
+        <div class="bgc-header">
+          <span class="bgc-no"><span class="bgc-idx">2</span>第2次报工</span>
+          <span class="bgc-time">2026-05-10 08:00</span>
+        </div>
+        <div class="bgc-body">
+          <div class="bgc-grid">
+            <div class="bgc-cell"><span class="bgc-label">报工人</span><span class="bgc-val">王五</span></div>
+            <div class="bgc-cell"><span class="bgc-label">所属班组</span><span class="bgc-val">老化班组</span></div>
+            <div class="bgc-cell"><span class="bgc-label">报工数量</span><span class="bgc-val">20</span></div>
+            <div class="bgc-cell"><span class="bgc-label">合格数量</span><span class="bgc-val green">20</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检状态</span><span class="bgc-val green">已质检-合格</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检员</span><span class="bgc-val">李梅</span></div>
+          </div>
+        </div>
+        <div class="bgc-footer">
+          <div class="bgc-btn" onclick="location.href='mobile-qc-detail.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>查看检验记录</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 工序4: 包装 ====== -->
+  <div class="gx-panel" id="gx3">
+    <div class="gx-info-card">
+      <div class="gxic-header">
+        <h4><span style="display:inline-block;width:4px;height:14px;background:#1890ff;border-radius:2px"></span>整机包装 <span class="gx-tag gray">否</span></h4>
+      </div>
+      <div class="gxic-body">
+        <div class="gxic-row"><span class="gxic-label">任务编号</span><span class="gxic-val">SCGD202605080001-GX04</span></div>
+        <div class="gxic-row"><span class="gxic-label">任务负责人</span><span class="gxic-val">赵六</span></div>
+        <div class="gxic-row"><span class="gxic-label">生产班组</span><span class="gxic-val">包装入库班组</span></div>
+        <div class="gxic-row"><span class="gxic-label">完成数量</span><span class="gxic-val">40 / 40</span></div>
+        <div class="gxic-row"><span class="gxic-label">实际开工</span><span class="gxic-val">2026-05-10 09:00</span></div>
+        <div class="gxic-row"><span class="gxic-label">实际完工</span><span class="gxic-val">2026-05-10 14:00</span></div>
+        <div class="gxic-row"><span class="gxic-label">报工方式</span><span class="gxic-val">人工报工</span></div>
+        <div class="gxic-row"><span class="gxic-label">是否质检</span><span class="gxic-val" style="color:#86909c">否</span></div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-bottom:8px">报工记录 <span class="st-more">共1条</span></div>
+    <div class="bg-list">
+      <div class="bg-card">
+        <div class="bgc-header">
+          <span class="bgc-no"><span class="bgc-idx">1</span>第1次报工</span>
+          <span class="bgc-time">2026-05-10 14:00</span>
+        </div>
+        <div class="bgc-body">
+          <div class="bgc-grid">
+            <div class="bgc-cell"><span class="bgc-label">报工人</span><span class="bgc-val">赵六</span></div>
+            <div class="bgc-cell"><span class="bgc-label">所属班组</span><span class="bgc-val">包装入库班组</span></div>
+            <div class="bgc-cell"><span class="bgc-label">报工数量</span><span class="bgc-val">40</span></div>
+            <div class="bgc-cell"><span class="bgc-label">质检状态</span><span class="bgc-val" style="color:#86909c">无需质检</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 工序5: 入库 ====== -->
+  <div class="gx-panel" id="gx4">
+    <div class="gx-info-card">
+      <div class="gxic-header">
+        <h4><span style="display:inline-block;width:4px;height:14px;background:#1890ff;border-radius:2px"></span>整机入库 <span class="gx-tag gray">否</span></h4>
+      </div>
+      <div class="gxic-body">
+        <div class="gxic-row"><span class="gxic-label">任务编号</span><span class="gxic-val">SCGD202605080001-GX05</span></div>
+        <div class="gxic-row"><span class="gxic-label">任务负责人</span><span class="gxic-val">赵六</span></div>
+        <div class="gxic-row"><span class="gxic-label">入库仓库</span><span class="gxic-val">成品仓A区</span></div>
+        <div class="gxic-row"><span class="gxic-label">入库数量</span><span class="gxic-val">40台</span></div>
+        <div class="gxic-row"><span class="gxic-label">入库时间</span><span class="gxic-val">2026-05-10 16:30</span></div>
+        <div class="gxic-row"><span class="gxic-label">报工方式</span><span class="gxic-val">人工报工</span></div>
+        <div class="gxic-row"><span class="gxic-label">是否质检</span><span class="gxic-val" style="color:#86909c">否</span></div>
+      </div>
+    </div>
+    <div class="gx-empty">该工序无需报工质检</div>
+  </div>
+
+  <!-- 工单全部检验记录入口 -->
+  <div style="padding:0 16px 6px;margin-top:4px"><span style="font-size:14px;font-weight:600">质检概览</span></div>
+  <div class="action-bar">
+    <div class="action-btn" onclick="location.href='mobile-quality.html'">
+      <div class="ab-left">
+        <div class="ab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div>
+          <div class="ab-text">查看本工单全部检验记录</div>
+          <div class="ab-sub">共3道工序检验，5条检验单</div>
+        </div>
+      </div>
+      <span class="ab-arrow">&#8250;</span>
+    </div>
+  </div>
+
+  <div class="bottom-safe"></div>
+</div>
+
+<script>
+// 工序切换（流程图 + 面板联动）
+function switchGx(idx){
+  var steps=document.querySelectorAll('#gxFlow .tf-step');
+  steps.forEach(function(s,i){
+    s.classList.toggle('selected', i===idx);
+  });
+  for(var i=0;i<5;i++){
+    var panel=document.getElementById('gx'+i);
+    if(panel) panel.classList.toggle('active', i===idx);
+  }
+}
+
+// 工单信息折叠/展开
+var woExpanded=true;
+function toggleWO(){
+  woExpanded=!woExpanded;
+  document.getElementById('woBody').style.display=woExpanded?'':'none';
+  document.getElementById('woArrow').style.transform=woExpanded?'':'rotate(-90deg)';
+}
+
+// 默认选中第一个工序
+switchGx(0);
+</script>
+</body>
+</html>

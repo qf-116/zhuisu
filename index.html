@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>移动端质量追溯原型</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:PingFang SC,Microsoft YaHei,sans-serif;background:#f5f6fa;color:#1d2129;min-height:100vh}
+.header{background:#fff;padding:20px;border-bottom:1px solid #e8e8e8;text-align:center}
+.header h1{font-size:20px;font-weight:600;margin-bottom:6px}
+.header p{font-size:13px;color:#86909c}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:20px;max-width:900px;margin:0 auto}
+.card{background:#fff;border-radius:12px;border:1px solid #f0f0f0;overflow:hidden;transition:box-shadow .2s;cursor:pointer;text-decoration:none;color:inherit;display:block}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.card-preview{height:360px;background:#fafafa;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card-preview iframe{width:375px;height:667px;border:none;transform:scale(.52);transform-origin:top left}
+.card-body{padding:14px 16px;border-top:1px solid #f5f5f5}
+.card-title{font-size:15px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.card-desc{font-size:12px;color:#86909c;line-height:1.5}
+.badge{font-size:10px;padding:2px 6px;border-radius:3px;font-weight:600}
+.badge-entry{background:#e6f7ff;color:#1890ff}
+.badge-list{background:#f6ffed;color:#52c41a}
+.badge-detail{background:#fff7e6;color:#fa8c16}
+.badge-nc{background:#fff1f0;color:#ff4d4f}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>MES+QMS 移动端质量追溯原型</h1>
+  <p>点击卡片在新窗口打开对应页面（手机尺寸 375×667）</p>
+</div>
+<div class="grid">
+
+  <a class="card" href="mobile-scan.html" target="_blank">
+    <div class="card-preview"><iframe src="mobile-scan.html" scrolling="no"></iframe></div>
+    <div class="card-body">
+      <div class="card-title"><span class="badge badge-entry">入口</span>扫码入口</div>
+      <div class="card-desc">扫描二维码进入质量追溯系统</div>
+    </div>
+  </a>
+
+  <a class="card" href="mobile-overview.html" target="_blank">
+    <div class="card-preview"><iframe src="mobile-overview.html" scrolling="no"></iframe></div>
+    <div class="card-body">
+      <div class="card-title"><span class="badge badge-list">总览</span>生产总览</div>
+      <div class="card-desc">查看工单生产进度与质检概况</div>
+    </div>
+  </a>
+
+  <a class="card" href="mobile-production.html" target="_blank">
+    <div class="card-preview"><iframe src="mobile-production.html" scrolling="no"></iframe></div>
+    <div class="card-body">
+      <div class="card-title"><span class="badge badge-detail">工单</span>工单详情</div>
+      <div class="card-desc">查看工单基本信息、工序和报工记录</div>
+    </div>
+  </a>
+
+  <a class="card" href="mobile-wo-detail.html" target="_blank">
+    <div class="card-preview"><iframe src="mobile-wo-detail.html" scrolling="no"></iframe></div>
+    <div class="card-body">
+      <div class="card-title"><span class="badge badge-detail">报工</span>报工详情</div>
+      <div class="card-desc">查看工序报工详细信息</div>
+    </div>
+  </a>
+
+  <a class="card" href="mobile-quality.html" target="_blank">
+    <div class="card-preview"><iframe src="mobile-quality.html" scrolling="no"></iframe></div>
+    <div class="card-body">
+      <div class="card-title"><span class="badge badge-list">质检</span>质检列表</div>
+      <div class="card-desc">检验单列表，支持按状态筛选</div>
+    </div>
+  </a>
+
+  <a class="card" href="mobile-qc-detail.html" target="_blank">
+    <div class="card-preview"><iframe src="mobile-qc-detail.html" scrolling="no"></iframe></div>
+    <div class="card-body">
+      <div class="card-title"><span class="badge badge-detail">检验</span>检验单详情</div>
+      <div class="card-desc">检验项目、不合格处理、附件签名</div>
+    </div>
+  </a>
+
+  <a class="card" href="mobile-nc-detail.html" target="_blank">
+    <div class="card-preview"><iframe src="mobile-nc-detail.html" scrolling="no"></iframe></div>
+    <div class="card-body">
+      <div class="card-title"><span class="badge badge-nc">NC</span>不合格处理详情</div>
+      <div class="card-desc">不合格品处理流程与决策记录</div>
+    </div>
+  </a>
+
+</div>
+</body>
+</html>

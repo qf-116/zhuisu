@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>不合格处理详情</title>
+<link rel="stylesheet" href="mobile-common.css">
+<style>
+.sbar{height:44px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#1d2129;background:#fff;position:sticky;top:0;z-index:100}
+.nbar{display:flex;align-items:center;height:44px;background:#fff;padding:0 12px;position:sticky;top:44px;z-index:99;border-bottom:1px solid #f0f0f0}
+.nb-back{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.nb-back svg{width:20px;height:20px}
+.nb-title{flex:1;text-align:center;font-size:17px;font-weight:600;color:#1d2129;margin-right:32px}
+.dsec{padding:0 16px 12px}
+.dcard{background:#fff;border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.dcard-t{font-size:15px;font-weight:600;color:#1d2129;padding:14px 16px 10px;display:flex;align-items:center;gap:8px}
+.dcard-b{padding:0 16px 14px}
+.drow{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f7f8fa}
+.drow:last-child{border-bottom:none}
+.dl{color:#86909c;font-size:13px;white-space:nowrap;margin-right:8px}
+.dv{color:#1d2129;font-size:13px;text-align:right;flex:1;word-break:break-all}
+.dv.red{color:#f53f3f}
+.dv.orange{color:#ff7d00}
+.dv.blue{color:#3491fa;cursor:pointer}
+.stit{font-size:15px;font-weight:600;color:#1d2129;padding:16px 16px 10px}
+.ncard{background:#fff;border-radius:12px;margin:0 16px 12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;padding:14px 16px}
+.nt{font-size:13px;color:#86909c;margin-bottom:6px}
+.ntx{font-size:13px;color:#1d2129;line-height:1.7}
+.ntx.red{color:#f53f3f;background:#fff2f0;padding:8px 10px;border-radius:6px;margin-top:6px}
+.nflow{display:flex;align-items:center;padding:12px 16px;margin:0 16px 12px;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow-x:auto}
+.nfs{flex-shrink:0;text-align:center;padding:6px 10px}
+.nfs .nfc{width:28px;height:28px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.nfs.done .nfc{background:#00b42a;color:#fff}
+.nfs.cur .nfc{background:#ff7d00;color:#fff;box-shadow:0 0 0 3px rgba(255,125,0,0.2)}
+.nfs.pend .nfc{background:#f0f0f0;color:#999}
+.nfs .nfn{font-size:10px;color:#86909c;white-space:nowrap}
+.nfs.done .nfn{color:#00b42a}
+.nfs.cur .nfn{color:#ff7d00;font-weight:500}
+.nfa{flex-shrink:0;width:16px;color:#d9d9d9;font-size:12px;text-align:center}
+.iic{background:#fff;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden}
+.iih{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #f0f0f0}
+.iihn{font-size:14px;font-weight:600;color:#1d2129}
+.iir{font-size:12px;font-weight:500;padding:2px 8px;border-radius:4px}
+.iir.fail{background:#ffece8;color:#f53f3f}
+.iid{display:grid;grid-template-columns:1fr 1fr;padding:10px 16px 14px;gap:8px}
+.iicell{display:flex;flex-direction:column;gap:2px}
+.iicl{font-size:12px;color:#86909c}
+.iicv{font-size:13px;color:#1d2129}
+.iicv.red{color:#f53f3f}
+.asec{padding:0 16px 12px}
+.ai{background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.aicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;margin-right:10px;flex-shrink:0}
+.ainf{flex:1;min-width:0}
+.anm{font-size:13px;color:#1d2129;font-weight:500}
+.asz{font-size:12px;color:#86909c;margin-top:2px}
+.aact{font-size:13px;color:#3491fa;cursor:pointer;white-space:nowrap;margin-left:8px}
+.sr{display:flex;align-items:center;padding:10px 0}
+.sa{width:36px;height:36px;border-radius:50%;background:#e8f3ff;color:#3491fa;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;margin-right:10px;flex-shrink:0}
+.si{flex:1}
+.sn{font-size:14px;font-weight:500;color:#1d2129}
+.stm{font-size:12px;color:#86909c;margin-top:2px}
+.srl{font-size:11px;color:#86909c}
+.bsafe{height:env(safe-area-inset-bottom,20px)}
+</style>
+</head>
+<body>
+<div class="sbar">9:41</div>
+<div class="nbar">
+  <a class="nb-back" href="mobile-quality.html"><svg viewBox="0 0 24 24" fill="none" stroke="#1d2129" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+  <div class="nb-title">不合格处理详情</div>
+</div>
+<div style="font-size:12px;color:#86909c;padding:12px 16px 0">处理单号: NC20260509001</div>
+<div class="nflow">
+  <div class="nfs done"><div class="nfc">&#10003;</div><div class="nfn">发现</div></div>
+  <div class="nfa">&#8250;</div>
+  <div class="nfs done"><div class="nfc">&#10003;</div><div class="nfn">评审</div></div>
+  <div class="nfa">&#8250;</div>
+  <div class="nfs cur"><div class="nfc">3</div><div class="nfn">返修</div></div>
+  <div class="nfa">&#8250;</div>
+  <div class="nfs pend"><div class="nfc">4</div><div class="nfn">验证</div></div>
+  <div class="nfa">&#8250;</div>
+  <div class="nfs pend"><div class="nfc">5</div><div class="nfn">关闭</div></div>
+</div>
+<div class="dsec">
+  <div class="dcard">
+    <div class="dcard-t"><span style="display:inline-block;width:4px;height:16px;background:#f53f3f;border-radius:2px"></span>处理基本信息</div>
+    <div class="dcard-b">
+      <div class="drow"><span class="dl">处理单号</span><span class="dv">NC20260509001</span></div>
+      <div class="drow"><span class="dl">来源检验单</span><span class="dv blue" onclick="location.href='mobile-qc-detail.html'">JYBG20260509001</span></div>
+      <div class="drow"><span class="dl">关联工单</span><span class="dv">SCGD202605080001</span></div>
+      <div class="drow"><span class="dl">发现工序</span><span class="dv">整机调试</span></div>
+      <div class="drow"><span class="dl">产品名称</span><span class="dv">变频器SB200-11T4T</span></div>
+      <div class="drow"><span class="dl">发现时间</span><span class="dv">2026-05-09 07:20</span></div>
+      <div class="drow"><span class="dl">不合格数量</span><span class="dv red">2台</span></div>
+      <div class="drow"><span class="dl">不合格序列号</span><span class="dv" style="font-size:12px">SN2026050800003<br>SN2026050800017</span></div>
+      <div class="drow"><span class="dl">处理方式</span><span class="dv orange">返修</span></div>
+      <div class="drow"><span class="dl">责任人</span><span class="dv">张三</span></div>
+      <div class="drow"><span class="dl">当前状态</span><span class="dv orange">返修中</span></div>
+    </div>
+  </div>
+</div>
+<div class="stit">不合格描述</div>
+<div class="ncard">
+  <div class="nt">不合格现象</div>
+  <div class="ntx">整机调试工序全检时发现2台产品三项输出电压不平衡，偏差超出标准要求范围。
+    <div class="ntx red">SN2026050800003: 三项输出电压380V/372V/385V，最大偏差5.26%<br>SN2026050800017: 三项输出电压378V/374V/386V，最大偏差5.62%</div>
+  </div>
+</div>
+<div class="ncard">
+  <div class="nt">原因分析</div>
+  <div class="ntx">初步判定为功率模块焊接工序中IGBT驱动信号走线受干扰，导致输出波形畸变。<br>1. 驱动板焊接时焊锡量偏少，信号线接触电阻增大<br>2. 电磁兼容设计裕量不足，受到临近功率回路干扰</div>
+</div>
+<div class="ncard">
+  <div class="nt">处置措施</div>
+  <div class="ntx">1. 对2台不合格品拆机重新焊接驱动板信号走线<br>2. 增加焊锡量，确保信号线接触可靠<br>3. 返修完成后重新进行整机调试全流程测试<br>4. 返修测试合格后重新提交质检</div>
+</div>
+<div class="stit">关联不合格检验项目</div>
+<div style="padding:0 16px 12px">
+  <div class="iic">
+    <div class="iih"><span class="iihn">三项输出电压平衡度</span><span class="iir fail">不合格</span></div>
+    <div class="iid">
+      <div class="iicell"><span class="iicl">检验方法</span><span class="iicv">仪器检测</span></div>
+      <div class="iicell"><span class="iicl">标准要求</span><span class="iicv">各项电压偏差&le;&plusmn;5%</span></div>
+      <div class="iicell"><span class="iicl">检验结果</span><span class="iicv red">不合格</span></div>
+      <div class="iicell"><span class="iicl">不合格数量</span><span class="iicv red">2台</span></div>
+    </div>
+  </div>
+</div>
+<div class="stit">相关附件 (4)</div>
+<div class="asec">
+  <div class="ai"><div class="aicon" style="background:#fff2f0;color:#f53f3f">NC</div><div class="ainf"><div class="anm">不合格品照片-01.jpg</div><div class="asz">1.2MB</div></div><span class="aact">预览</span></div>
+  <div class="ai"><div class="aicon" style="background:#fff2f0;color:#f53f3f">NC</div><div class="ainf"><div class="anm">不合格品照片-02.jpg</div><div class="asz">0.9MB</div></div><span class="aact">预览</span></div>
+  <div class="ai"><div class="aicon" style="background:#e6f7ff;color:#3491fa">PDF</div><div class="ainf"><div class="anm">原因分析报告.pdf</div><div class="asz">3.1MB</div></div><span class="aact">预览</span></div>
+  <div class="ai"><div class="aicon" style="background:#fff7e6;color:#ff7d00">PDF</div><div class="ainf"><div class="anm">返修作业指导书.pdf</div><div class="asz">1.8MB</div></div><span class="aact">预览</span></div>
+</div>
+<div class="dsec">
+  <div class="dcard">
+    <div class="dcard-t">处理人员</div>
+    <div class="dcard-b">
+      <div class="sr"><div class="sa">王</div><div class="si"><div class="sn">王冰冰</div><div class="srl">质检员 - 发现不合格</div><div class="stm">2026-05-09 07:45</div></div></div>
+      <div style="height:1px;background:#f7f8fa;margin:4px 0"></div>
+      <div class="sr"><div class="sa">李</div><div class="si"><div class="sn">李工</div><div class="srl">评审人 - 原因分析</div><div class="stm">2026-05-09 08:30</div></div></div>
+      <div style="height:1px;background:#f7f8fa;margin:4px 0"></div>
+      <div class="sr"><div class="sa">张</div><div class="si"><div class="sn">张三</div><div class="srl">责任人 - 执行返修</div><div class="stm">2026-05-09 09:00</div></div></div>
+    </div>
+  </div>
+</div>
+<div class="bsafe"></div>
+</body>
+</html>

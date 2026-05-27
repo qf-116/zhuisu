@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>检验单详情</title>
+<link rel="stylesheet" href="mobile-common.css">
+<style>
+.phone-frame{max-width:430px;margin:0 auto;min-height:100vh;background:#f5f6fa;position:relative;overflow-x:hidden}
+/* 顶部检验单摘要 */
+.qc-summary{background:#fff;padding:16px;border-bottom:1px solid #f0f0f0;position:sticky;top:0;z-index:101}
+.qc-summary-top{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:6px 4px;transition:background .12s;border-radius:8px}
+.qc-summary-top:active{background:#f5f5f5}
+.qc-summary-no{font-size:16px;font-weight:700;color:#1d2129;display:flex;align-items:center;gap:6px}
+.qc-summary-arrow{font-size:14px;color:#c9cdd4;margin-left:2px}
+.qc-summary-result{font-size:12px;font-weight:600;padding:4px 12px;border-radius:4px}
+.qc-summary-result.pass{background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f}
+.qc-summary-result.fail{background:#fff1f0;color:#ff4d4f;border:1px solid #ffa39e}
+.qc-summary-meta{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f5f5f5}
+.qc-meta-row{display:flex;align-items:center;font-size:12px;line-height:1.5}
+.qc-meta-label{color:#86909c;flex-shrink:0;margin-right:4px}
+.qc-meta-val{color:#1d2129;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 检验单切换弹窗 */
+.qc-picker-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none}
+.qc-picker-mask.show{display:block}
+.qc-picker{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-radius:14px 14px 0 0;z-index:301;animation:qcPickerUp .22s ease-out}
+@keyframes qcPickerUp{from{transform:translate(-50%,100%)}to{transform:translate(-50%,0)}}
+.qc-picker-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid #f0f0f0}
+.qc-picker-title{font-size:15px;font-weight:600;color:#1d2129}
+.qc-picker-close{font-size:22px;color:#86909c;cursor:pointer;line-height:1;padding:0 2px}
+.qc-picker-list{padding:8px 12px 16px;display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto}
+.qc-picker-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;border:1px solid #e8e8e8;cursor:pointer;transition:all .12s}
+.qc-picker-item:active{background:#f5f5f5}
+.qc-picker-item.current{border-color:#91d5ff;background:#f0f7ff}
+.qc-pi-left{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.qc-pi-no{font-size:14px;font-weight:600;color:#1d2129;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qc-pi-info{font-size:11px;color:#86909c}
+.qc-pi-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;margin-left:10px}
+.qc-pi-result{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px}
+.qc-pi-result.pass{background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f}
+.qc-pi-result.fail{background:#fff1f0;color:#ff4d4f;border:1px solid #ffa39e}
+.qc-pi-current{font-size:10px;color:#1890ff;font-weight:500}
+/* Tab切换 */
+.tab-bar{display:flex;background:#fff;border-bottom:1px solid #f0f0f0}
+.tab-item{flex:1;text-align:center;padding:10px 0;font-size:13px;color:#86909c;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;position:relative}
+.tab-item:active{background:#fafafa}
+.tab-item.active{color:#1890ff;border-bottom-color:#1890ff;font-weight:600}
+.tab-item .tab-badge{display:inline-block;min-width:16px;height:16px;line-height:16px;text-align:center;border-radius:8px;font-size:10px;font-weight:600;margin-left:2px;vertical-align:middle;padding:0 4px}
+.tab-badge.blue{background:#e6f7ff;color:#1890ff}
+.tab-badge.red{background:#fff1f0;color:#ff4d4f}
+.tab-badge.green{background:#f6ffed;color:#52c41a}
+/* Tab内容区 */
+.tab-panel{display:none;padding:12px 16px 16px}
+.tab-panel.active{display:block}
+/* 检验单文档容器 */
+.qc-doc{display:none}
+.qc-doc.active{display:block}
+/* 详情卡片 */
+.detail-card{background:#fff;border-radius:10px;overflow:hidden;margin-bottom:10px;border:1px solid #f0f0f0}
+.dc-title{font-size:13px;font-weight:600;color:#1d2129;padding:12px 14px 8px;display:flex;align-items:center;gap:6px}
+.dc-title .dc-dot{width:3px;height:14px;border-radius:2px;background:#1890ff}
+.dc-body{padding:0 14px 12px}
+.dc-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid #fafafa}
+.dc-row:last-child{border-bottom:none}
+.dc-label{color:#86909c;font-size:12px;white-space:nowrap;margin-right:10px}
+.dc-val{color:#1d2129;font-size:12px;text-align:right;flex:1;word-break:break-all;font-weight:500}
+.dc-val.red{color:#ff4d4f}
+.dc-val.orange{color:#fa8c16}
+.dc-val.green{color:#52c41a}
+.dc-val.blue{color:#1890ff;cursor:pointer}
+/* 检验项目卡片 */
+.ii-card{background:#fff;border-radius:10px;border:1px solid #f0f0f0;margin-bottom:8px;overflow:hidden}
+.ii-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px}
+.ii-header-name{font-size:13px;font-weight:600;color:#1d2129}
+.ii-result{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px}
+.ii-result.pass{background:#f6ffed;color:#52c41a}
+.ii-result.fail{background:#fff1f0;color:#ff4d4f}
+.ii-detail{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:0 14px 10px;border-top:1px solid #fafafa;padding-top:8px}
+.ii-cell{display:flex;flex-direction:column;gap:1px}
+.ii-cell-label{font-size:11px;color:#86909c}
+.ii-cell-val{font-size:12px;color:#1d2129}
+.ii-cell-val.red{color:#ff4d4f}
+.ii-cell-val.green{color:#52c41a}
+/* ===== 检验项目卡片(优化版) ===== */
+.ipi-card{background:#fff;border-radius:10px;border:1px solid #f0f0f0;margin-bottom:10px;overflow:hidden}
+.ipi-card.fail{border-color:#ffa39e}
+.ipi-head{display:flex;align-items:flex-start;justify-content:space-between;padding:10px 12px;gap:8px;border-bottom:1px solid #f5f5f5}
+.ipi-card.fail .ipi-head{background:#fff1f0;border-bottom-color:#ffd6d4}
+.ipi-title{flex:1;min-width:0;font-size:13px;font-weight:600;color:#1d2129;line-height:1.45}
+.ipi-idx{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;padding:0 5px;border-radius:4px;background:#f0f5ff;color:#1890ff;font-size:11px;font-weight:700;margin-right:5px}
+.ipi-tags{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.ipi-trow{display:flex;gap:3px}
+.ipi-tag{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:500;white-space:nowrap;line-height:1.5}
+.ipi-tag.quant{background:#fff7e6;color:#fa8c16;border:1px solid #ffd591}
+.ipi-tag.qual{background:#e6f7ff;color:#1890ff;border:1px solid #91d5ff}
+.ipi-tag.severe{background:#fff1f0;color:#ff4d4f;border:1px solid #ffa39e}
+.ipi-tag.r-pass{background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;font-weight:600}
+.ipi-tag.r-fail{background:#fff1f0;color:#ff4d4f;border:1px solid #ffa39e;font-weight:600}
+.ipi-tag.recheck{background:#fff;color:#1890ff;border:1px solid #91d5ff;font-weight:500}
+/* 定量量程 */
+.ipi-quant{padding:10px 12px;background:#fafbff;border-bottom:1px solid #f5f5f5}
+.ipi-range{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.ipi-rcell{background:#fff;border:1px solid #e8e8e8;border-radius:6px;padding:6px 4px;text-align:center}
+.ipi-rcell.std{background:#e6f7ff;border-color:#91d5ff}
+.ipi-rlabel{font-size:10px;color:#86909c}
+.ipi-rcell.std .ipi-rlabel{color:#1890ff}
+.ipi-rval{font-size:13px;font-weight:600;color:#1d2129;margin-top:2px;word-break:break-all;line-height:1.3}
+.ipi-rcell.std .ipi-rval{color:#1890ff}
+/* 录入数据条 */
+.ipi-input{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid #e8e8e8;border-radius:6px;padding:8px 10px;gap:8px}
+.ipi-input.pass{border-color:#b7eb8f;background:#f6ffed}
+.ipi-input.fail{border-color:#ffa39e;background:#fff1f0}
+.ipi-input-l{font-size:11px;color:#86909c;display:flex;align-items:baseline;gap:6px}
+.ipi-input-l strong{font-size:14px;color:#1d2129;font-weight:700}
+.ipi-input.pass .ipi-input-l strong{color:#52c41a}
+.ipi-input.fail .ipi-input-l strong{color:#ff4d4f}
+.ipi-input-r{font-size:11px;color:#86909c;flex-shrink:0;font-weight:500}
+.ipi-input.pass .ipi-input-r{color:#52c41a}
+.ipi-input.fail .ipi-input-r{color:#ff4d4f}
+/* 不合格描述 */
+.ipi-desc{padding:8px 12px;background:#fff2f0;color:#ff4d4f;font-size:12px;line-height:1.5;border-bottom:1px solid #ffd6d4}
+.ipi-desc strong{margin-right:4px;font-weight:600}
+/* 通用元信息 */
+.ipi-meta{padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;background:#fafafa;font-size:11px}
+.ipi-meta-row{display:flex;justify-content:space-between;gap:4px;align-items:center}
+.ipi-meta-row .ml{color:#86909c;flex-shrink:0}
+.ipi-meta-row .mv{color:#1d2129;text-align:right;word-break:break-all;font-weight:500}
+/* 简版卡片 brief */
+.ipi-brief{padding:10px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f5f5f5;background:#fafbff}
+.ipi-card.fail .ipi-brief{background:#fff8f7}
+.ipi-brief-l{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;flex:1;min-width:0}
+.ipi-brief-label{font-size:11px;color:#86909c}
+.ipi-brief-val{font-size:13px;font-weight:700;color:#1d2129}
+.ipi-brief-val.pass{color:#52c41a}
+.ipi-brief-val.fail{color:#ff4d4f}
+.ipi-brief-range{font-size:11px;color:#86909c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 卡片 chips + 详情入口 */
+.ipi-foot{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border-top:1px solid #fafafa}
+.ipi-chips{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.ipi-chip{font-size:10px;color:#86909c;background:#f5f6fa;border-radius:4px;padding:2px 6px;border:1px solid #e8e8e8;line-height:1.5;display:inline-flex;align-items:center;gap:3px}
+.ipi-chip.nc{color:#ff4d4f;background:#fff1f0;border-color:#ffd6d4}
+.ipi-chip.attach{color:#1890ff;background:#e6f7ff;border-color:#91d5ff}
+.ipi-chip.remark{color:#fa8c16;background:#fff7e6;border-color:#ffd591}
+.ipi-detail-link{font-size:12px;color:#1890ff;cursor:pointer;flex-shrink:0;font-weight:500;display:flex;align-items:center;gap:2px}
+/* 详情弹窗 */
+.ipi-modal{position:fixed;left:0;right:0;top:0;bottom:0;z-index:200;display:none}
+.ipi-modal.show{display:block}
+.ipi-modal-mask{position:absolute;inset:0;background:rgba(0,0,0,.45);animation:ipiFade .15s ease}
+.ipi-modal-body{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;max-height:88vh;background:#f5f6fa;border-radius:14px 14px 0 0;display:flex;flex-direction:column;overflow:hidden;animation:ipiSlide .22s ease}
+@keyframes ipiFade{from{opacity:0}to{opacity:1}}
+@keyframes ipiSlide{from{transform:translate(-50%,100%)}to{transform:translate(-50%,0)}}
+.ipi-modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border-bottom:1px solid #f0f0f0;flex-shrink:0}
+.ipi-modal-title{font-size:15px;font-weight:600;color:#1d2129;flex:1;display:flex;align-items:center;gap:8px}
+.ipi-modal-close{font-size:24px;color:#86909c;cursor:pointer;line-height:1;padding:0 4px}
+.ipi-modal-content{padding:12px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+/* 弹窗内 section */
+.ipi-section{background:#fff;border-radius:10px;border:1px solid #f0f0f0;margin-bottom:10px;overflow:hidden}
+.ipi-section-hd{padding:10px 12px 8px;font-size:13px;font-weight:600;color:#1d2129;display:flex;align-items:center;gap:6px;border-bottom:1px solid #f5f5f5}
+.ipi-section-hd .dot{width:3px;height:14px;border-radius:2px;background:#1890ff;flex-shrink:0}
+.ipi-section-bd{padding:10px 12px}
+.ipi-empty{padding:14px 12px;text-align:center;color:#c0c0c0;font-size:12px}
+/* 附件列表 */
+.ipi-attach-grid{display:flex;flex-direction:column;gap:6px}
+.ipi-attach-item{display:flex;align-items:center;gap:10px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #f0f0f0}
+.ipi-attach-thumb{width:38px;height:38px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.ipi-attach-meta{flex:1;min-width:0}
+.ipi-attach-n{font-size:12px;color:#1d2129;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ipi-attach-s{font-size:10px;color:#86909c;margin-top:2px}
+.ipi-attach-action{font-size:12px;color:#1890ff;cursor:pointer;flex-shrink:0;padding:0 6px}
+/* 备注块 */
+.ipi-remark-box{background:#fafafa;border-radius:6px;padding:10px 12px;font-size:12px;color:#1d2129;line-height:1.6;word-break:break-all;text-align:justify}
+.ipi-desc-box{background:#fff2f0;border-radius:6px;padding:10px 12px;font-size:12px;color:#ff4d4f;line-height:1.6;word-break:break-all;text-align:justify}
+.nc-card{background:#fff;border-radius:10px;border:1px solid #f0f0f0;margin-bottom:10px;overflow:hidden}
+.nc-header{padding:12px 14px 8px;font-size:13px;font-weight:600;color:#1d2129;display:flex;align-items:center;gap:6px}
+.nc-header .nc-badge{font-size:11px;padding:2px 6px;border-radius:4px;background:#fff1f0;color:#ff4d4f;font-weight:600}
+.nc-body{padding:0 14px 12px;display:block}
+.nc-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid #fafafa}
+.nc-row:last-child{border-bottom:none}
+.nc-label{color:#86909c;font-size:12px;white-space:nowrap;margin-right:10px}
+.nc-val{color:#1d2129;font-size:12px;text-align:right;flex:1;word-break:break-all;font-weight:500}
+.nc-val.orange{color:#fa8c16}
+.nc-desc{background:#fff2f0;border-radius:6px;padding:10px 12px;font-size:12px;color:#ff4d4f;line-height:1.6;word-break:break-all;text-align:justify}
+/* 不合格处理决策 */
+.nc-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 14px 12px}
+.nc-summary .nc-sum-cell{background:#fafbff;border:1px solid #f0f0f0;border-radius:8px;padding:10px 12px}
+.nc-summary .nc-sum-cell.danger{background:#fff1f0;border-color:#ffd6d4}
+.nc-sum-label{font-size:11px;color:#86909c;margin-bottom:4px}
+.nc-sum-val{font-size:18px;font-weight:700;color:#1d2129;line-height:1.2}
+.nc-sum-val.red{color:#ff4d4f}
+.nc-sum-val .unit{font-size:11px;color:#86909c;font-weight:400;margin-left:2px}
+.nc-disp-list{padding:0 14px 12px;display:flex;flex-direction:column;gap:8px}
+.nc-disp{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;border:1px solid #f0f0f0;background:#fafafa}
+.nc-disp-l{display:flex;align-items:center;gap:8px;min-width:0}
+.nc-disp-tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;flex-shrink:0}
+.nc-disp-tag.scrap{background:#fff1f0;color:#ff4d4f}
+.nc-disp-tag.rework{background:#fff7e6;color:#fa8c16}
+.nc-disp-tag.concession{background:#e6f7ff;color:#1890ff}
+.nc-disp-tag.return{background:#f9f0ff;color:#722ed1}
+.nc-disp-tag.regrade{background:#f6ffed;color:#52c41a}
+.nc-disp-name{font-size:13px;color:#1d2129;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nc-disp-r{font-size:14px;font-weight:700;color:#1d2129;flex-shrink:0;margin-left:10px}
+.nc-disp-r .unit{font-size:11px;color:#86909c;font-weight:400;margin-left:2px}
+/* 空态 */
+.empty-tip{text-align:center;padding:40px 16px;color:#c0c0c0;font-size:13px;background:#fff;border-radius:10px;border:1px solid #f0f0f0}
+.empty-tip .et-icon{width:48px;height:48px;margin:0 auto 10px;background:#f6ffed;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:#52c41a}
+/* 附件 */
+.attach-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid #f0f0f0}
+.attach-icon{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.attach-info{flex:1;min-width:0}
+.attach-name{font-size:12px;color:#1d2129;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attach-size{font-size:11px;color:#86909c;margin-top:1px}
+.attach-action{font-size:12px;color:#1890ff;cursor:pointer;white-space:nowrap}
+/* 签名 */
+.sign-card{background:#fff;border-radius:10px;border:1px solid #f0f0f0;padding:12px 14px;margin-bottom:10px}
+.sign-row{display:flex;align-items:center;gap:10px}
+.sign-avatar{width:32px;height:32px;border-radius:50%;background:#e6f7ff;color:#1890ff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.sign-info{flex:1}
+.sign-name{font-size:13px;font-weight:500;color:#1d2129}
+.sign-time{font-size:11px;color:#86909c;margin-top:1px}
+/* 统计条 */
+.stat-strip{display:flex;gap:8px;margin-bottom:10px}
+.stat-chip{flex:1;background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid #f0f0f0}
+.stat-chip .sc-val{font-size:16px;font-weight:700;color:#1d2129}
+.stat-chip .sc-val.green{color:#52c41a}
+.stat-chip .sc-val.red{color:#ff4d4f}
+.stat-chip .sc-label{font-size:10px;color:#86909c;margin-top:2px}
+/* ===== 检验项目列表(精简版) ===== */
+.ipi-list{display:flex;flex-direction:column;gap:6px}
+.ipi-row{background:#fff;border:1px solid #f0f0f0;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;transition:background .15s}
+.ipi-row:active{background:#fafafa}
+.ipi-row.fail{border-color:#ffd6d4;background:#fff8f7}
+.ipi-row-name{font-size:13px;font-weight:500;color:#1d2129;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ipi-row-r{display:flex;align-items:center;flex-shrink:0}
+.ipi-row-result{font-size:12px;font-weight:600;padding:4px 10px;border-radius:4px}
+.ipi-row-result.pass{background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f}
+.ipi-row-result.fail{background:#fff1f0;color:#ff4d4f;border:1px solid #ffa39e}
+.ipi-list-tip{text-align:center;padding:12px 0 4px;font-size:11px;color:#c0c0c0}
+/* ===== 检验项目详情弹窗（tab切换） ===== */
+.ipi-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:1000}
+.ipi-modal.active{display:flex}
+.ipi-modal-box{background:#f5f6fa;width:100%;max-width:430px;max-height:88vh;border-radius:14px 14px 0 0;display:flex;flex-direction:column;animation:ipiSlideUp .25s ease-out}
+@keyframes ipiSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.ipi-modal-hd{padding:14px 16px;background:#fff;border-radius:14px 14px 0 0}
+.ipi-modal-top{display:flex;align-items:center;justify-content:space-between}
+.ipi-modal-title{flex:1;font-size:15px;font-weight:600;color:#1d2129;min-width:0}
+.ipi-modal-close{font-size:24px;color:#86909c;cursor:pointer;line-height:1;padding:0 4px;flex-shrink:0}
+.ipi-modal-tabs{display:flex;justify-content:space-between;align-items:center;padding:0 16px 0;background:#fff;border-bottom:1px solid #f0f0f0}
+.ipi-modal-tab{padding:8px 0;font-size:13px;color:#86909c;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.ipi-modal-tab.active{color:#1890ff;border-bottom-color:#1890ff;font-weight:600}
+.ipi-modal-bd{flex:1;overflow-y:auto;padding:14px 16px}
+.bottom-safe{height:20px}
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="status-bar"><span class="time">9:41</span><span class="icons">&#x1f4f6; &#x1f50b;</span></div>
+  <div class="nav-bar">
+    <div class="back" onclick="location.href='mobile-quality.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="title">检验单详情</div><div class="action"></div>
+  </div>
+
+  <!-- ===================== 检验单A: 初次检验 ===================== -->
+  <div class="qc-doc active" data-doc="0">
+    <div class="qc-summary">
+      <div class="qc-summary-top" onclick="openQcPicker()">
+        <div class="qc-summary-no">JYBG20260509001 <span class="qc-summary-arrow">›</span></div>
+        <span class="qc-summary-result fail">不合格</span>
+      </div>
+      <div class="qc-summary-meta">
+        <div class="qc-meta-row"><span class="qc-meta-label">工序名称</span><span class="qc-meta-val">整机调试</span></div>
+        <div class="qc-meta-row"><span class="qc-meta-label">生产工单号</span><span class="qc-meta-val">SCGD202605080001</span></div>
+        <div class="qc-meta-row"><span class="qc-meta-label">物料名称</span><span class="qc-meta-val">变频器SB200-11T4T</span></div>
+        <div class="qc-meta-row"><span class="qc-meta-label">检验方案</span><span class="qc-meta-val">SB200成品机检验标准</span></div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="switchTab(0,this)">检验提交结果</div>
+      <div class="tab-item" onclick="switchTab(1,this)">检验项目<span class="tab-badge blue">11</span></div>
+      <div class="tab-item" onclick="switchTab(2,this)">不合格处理<span class="tab-badge red">1</span></div>
+    </div>
+
+    <div class="tab-panel active" data-tab="0">
+      <div class="detail-card">
+        <div class="dc-title"><span class="dc-dot" style="background:#52c41a"></span>检验提交结果</div>
+        <div class="dc-body">
+          <div class="dc-row"><span class="dc-label">报工数量</span><span class="dc-val">40台</span></div>
+          <div class="dc-row"><span class="dc-label">最少抽样数量</span><span class="dc-val">30台</span></div>
+          <div class="dc-row"><span class="dc-label">抽样合格数量</span><span class="dc-val" style="color:#52c41a">28台</span></div>
+          <div class="dc-row"><span class="dc-label">抽样不合格数量</span><span class="dc-val" style="color:#ff4d4f">2台</span></div>
+          <div class="dc-row"><span class="dc-label">合格数量</span><span class="dc-val" style="color:#52c41a">28台</span></div>
+          <div class="dc-row"><span class="dc-label">不合格数量</span><span class="dc-val" style="color:#ff4d4f">2台</span></div>
+          <div class="dc-row"><span class="dc-label">备注</span><span class="dc-val" style="text-align:left">抽样30台中发现2台主级厚度偏差超标，已转不合格处理</span></div>
+          <div class="dc-row"><span class="dc-label">附件</span><span class="dc-val" style="color:#1890ff">不合格批次实拍.jpg (2.4MB)</span></div>
+          <div class="dc-row"><span class="dc-label">检验日期</span><span class="dc-val">2026-05-09</span></div>
+          <div class="dc-row"><span class="dc-label">检验员</span><span class="dc-val">王冰冰</span></div>
+          <div class="dc-row"><span class="dc-label">检验提交日期</span><span class="dc-val">2026-05-09 07:45</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" data-tab="1">
+      <div class="stat-strip">
+        <div class="stat-chip"><div class="sc-val">11</div><div class="sc-label">检验项目</div></div>
+        <div class="stat-chip"><div class="sc-val green">10</div><div class="sc-label">合格</div></div>
+        <div class="stat-chip"><div class="sc-val red">1</div><div class="sc-label">不合格</div></div>
+      </div>
+
+      <div class="ipi-list">
+        <div class="ipi-row" onclick="openIpi(0)">
+          <div class="ipi-row-name">主级片宽</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+        <div class="ipi-row fail" onclick="openIpi(1)">
+          <div class="ipi-row-name">主级厚度偏差</div>
+          <div class="ipi-row-r"><span class="ipi-row-result fail">不合格</span></div>
+        </div>
+        <div class="ipi-row" onclick="openIpi(2)">
+          <div class="ipi-row-name">主级片长</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+        <div class="ipi-row" onclick="openIpi(3)">
+          <div class="ipi-row-name">铁芯外观</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+        <div class="ipi-row" onclick="openIpi(4)">
+          <div class="ipi-row-name">叠装质量</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+        <div class="ipi-row" onclick="openIpi(5)">
+          <div class="ipi-row-name">接缝对齐度</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+        <div class="ipi-row" onclick="openIpi(6)">
+          <div class="ipi-row-name">绑扎牢固性</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+        <div class="ipi-row" onclick="openIpi(7)">
+          <div class="ipi-row-name">接地连接</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+        <div class="ipi-row" onclick="openIpi(8)">
+          <div class="ipi-row-name">标识完整性</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+        <div class="ipi-row" onclick="openIpi(9)">
+          <div class="ipi-row-name">包装完好性</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+        <div class="ipi-row" onclick="openIpi(10)">
+          <div class="ipi-row-name">文件齐全性</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+      </div>
+      <div class="ipi-list-tip">点击名称查看详情，点击结果查看检验结果</div>
+    </div>
+
+    <div class="tab-panel" data-tab="2">
+      <div class="detail-card">
+        <div class="dc-title"><span class="dc-dot" style="background:#ff4d4f"></span>不合格数量</div>
+        <div class="dc-body">
+          <div style="display:flex;align-items:baseline;gap:4px">
+            <span style="font-size:24px;font-weight:700;color:#ff4d4f">30</span>
+            <span style="font-size:13px;color:#86909c">台</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="dc-title"><span class="dc-dot" style="background:#fa8c16"></span>处理决策<span style="font-size:11px;color:#86909c;font-weight:400;margin-left:4px">合计 30 台</span></div>
+        <div class="dc-body">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:6px;background:#e6f7ff;border:1px solid #91d5ff">
+              <span style="font-size:12px;font-weight:600;color:#1890ff;padding:2px 8px;border-radius:4px;background:#fff;border:1px solid #91d5ff">让步接收</span>
+              <span style="font-size:14px;font-weight:700;color:#1d2129">8<span style="font-size:11px;color:#86909c;font-weight:400;margin-left:2px">台</span></span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:6px;background:#fff7e6;border:1px solid #ffd591">
+              <span style="font-size:12px;font-weight:600;color:#fa8c16;padding:2px 8px;border-radius:4px;background:#fff;border:1px solid #ffd591">返修</span>
+              <span style="font-size:14px;font-weight:700;color:#1d2129">18<span style="font-size:11px;color:#86909c;font-weight:400;margin-left:2px">台</span></span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:6px;background:#fff1f0;border:1px solid #ffa39e">
+              <span style="font-size:12px;font-weight:600;color:#ff4d4f;padding:2px 8px;border-radius:4px;background:#fff;border:1px solid #ffa39e">报废</span>
+              <span style="font-size:14px;font-weight:700;color:#1d2129">4<span style="font-size:11px;color:#86909c;font-weight:400;margin-left:2px">台</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="dc-title"><span class="dc-dot" style="background:#86909c"></span>备注</div>
+        <div class="dc-body">
+          <div style="background:#fafafa;border-radius:6px;padding:10px 12px;font-size:12px;color:#1d2129;line-height:1.6">返修批 05-09 09:00 已转工艺组开工，预计 05-10 14:00 前完成；让步接收批已知会客户技术对接人并书面确认；报废批已开具不良品标签并入库待处置。</div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="dc-title"><span class="dc-dot" style="background:#1890ff"></span>附件<span style="font-size:11px;color:#86909c;font-weight:400;margin-left:4px">(3)</span></div>
+        <div class="dc-body" style="display:flex;flex-direction:column;gap:6px">
+          <div class="attach-item">
+            <div class="attach-icon" style="background:#fff7e6;color:#fa8c16">JPG</div>
+            <div class="attach-info"><div class="attach-name">不合格批次实拍.jpg</div><div class="attach-size">2.4MB</div></div>
+            <span class="attach-action">预览</span>
+          </div>
+          <div class="attach-item">
+            <div class="attach-icon" style="background:#e6f7ff;color:#1890ff">PDF</div>
+            <div class="attach-info"><div class="attach-name">让步接收技术评审单.pdf</div><div class="attach-size">0.8MB</div></div>
+            <span class="attach-action">预览</span>
+          </div>
+          <div class="attach-item">
+            <div class="attach-icon" style="background:#f6ffed;color:#52c41a">XLS</div>
+            <div class="attach-info"><div class="attach-name">处理决策明细表.xlsx</div><div class="attach-size">0.3MB</div></div>
+            <span class="attach-action">预览</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- ===================== 检验单A 结束 ===================== -->
+
+  <!-- ===================== 检验单B: 返修检验 ===================== -->
+  <div class="qc-doc" data-doc="1">
+    <div class="qc-summary">
+      <div class="qc-summary-top" onclick="openQcPicker()">
+        <div class="qc-summary-no">JYBG20260510001 <span class="qc-summary-arrow">›</span></div>
+        <span class="qc-summary-result pass">合格</span>
+      </div>
+      <div class="qc-summary-meta">
+        <div class="qc-meta-row"><span class="qc-meta-label">工序名称</span><span class="qc-meta-val">整机调试</span></div>
+        <div class="qc-meta-row"><span class="qc-meta-label">生产工单号</span><span class="qc-meta-val">SCGD202605080001</span></div>
+        <div class="qc-meta-row"><span class="qc-meta-label">物料名称</span><span class="qc-meta-val">变频器SB200-11T4T</span></div>
+        <div class="qc-meta-row"><span class="qc-meta-label">检验方案</span><span class="qc-meta-val">SB200成品机检验标准</span></div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="switchTab(0,this)">检验提交结果</div>
+      <div class="tab-item" onclick="switchTab(1,this)">检验项目<span class="tab-badge blue">1</span></div>
+      <div class="tab-item" onclick="switchTab(2,this)">不合格处理</div>
+    </div>
+
+    <div class="tab-panel active" data-tab="0">
+      <div class="detail-card">
+        <div class="dc-title"><span class="dc-dot" style="background:#52c41a"></span>检验提交结果</div>
+        <div class="dc-body">
+          <div class="dc-row"><span class="dc-label">报工数量</span><span class="dc-val">2台</span></div>
+          <div class="dc-row"><span class="dc-label">最少抽样数量</span><span class="dc-val">2台</span></div>
+          <div class="dc-row"><span class="dc-label">抽样合格数量</span><span class="dc-val" style="color:#52c41a">2台</span></div>
+          <div class="dc-row"><span class="dc-label">抽样不合格数量</span><span class="dc-val">0台</span></div>
+          <div class="dc-row"><span class="dc-label">合格数量</span><span class="dc-val" style="color:#52c41a">2台</span></div>
+          <div class="dc-row"><span class="dc-label">不合格数量</span><span class="dc-val">0台</span></div>
+          <div class="dc-row"><span class="dc-label">备注</span><span class="dc-val" style="text-align:left">返修后复测2台，主级厚度偏差均落入公差带内</span></div>
+          <div class="dc-row"><span class="dc-label">附件</span><span class="dc-val" style="color:#1890ff">返修后波形截图.jpg (0.6MB)</span></div>
+          <div class="dc-row"><span class="dc-label">返修序列号</span><span class="dc-val" style="font-size:11px">SN2026050800003、SN2026050800017</span></div>
+          <div class="dc-row"><span class="dc-label">检验日期</span><span class="dc-val">2026-05-10</span></div>
+          <div class="dc-row"><span class="dc-label">检验员</span><span class="dc-val">王冰冰</span></div>
+          <div class="dc-row"><span class="dc-label">检验提交日期</span><span class="dc-val">2026-05-10 15:00</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" data-tab="1">
+      <div class="stat-strip">
+        <div class="stat-chip"><div class="sc-val">1</div><div class="sc-label">复测项</div></div>
+        <div class="stat-chip"><div class="sc-val green">1</div><div class="sc-label">合格</div></div>
+        <div class="stat-chip"><div class="sc-val">0</div><div class="sc-label">不合格</div></div>
+      </div>
+      <div style="font-size:11px;color:#86909c;margin-bottom:10px;line-height:1.5;background:#f0f5ff;padding:8px 10px;border-radius:6px;border-left:3px solid #1890ff">
+        <span style="color:#1890ff;font-weight:600">说明：</span>仅对初次检验中不合格的项目进行复测，其余合格项不重复检验。
+      </div>
+
+      <div class="ipi-list">
+        <div class="ipi-row" onclick="openIpi(11)">
+          <div class="ipi-row-name">主级厚度偏差（复测）</div>
+          <div class="ipi-row-r"><span class="ipi-row-result pass">合格</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" data-tab="2">
+      <div class="empty-tip">
+        <div class="et-icon">&#10003;</div>
+        本次检验全部合格，无不合格处理记录
+      </div>
+    </div>
+
+  </div>
+  <!-- ===================== 检验单B 结束 ===================== -->
+
+  <div class="bottom-safe"></div>
+</div>
+
+<!-- 检验单切换弹窗 -->
+<div class="qc-picker-mask" id="qcPickerMask" onclick="closeQcPicker()">
+  <div class="qc-picker" onclick="event.stopPropagation()">
+    <div class="qc-picker-hd">
+      <span class="qc-picker-title">切换检验单</span>
+      <span class="qc-picker-close" onclick="closeQcPicker()">&times;</span>
+    </div>
+    <div class="qc-picker-list">
+      <div class="qc-picker-item current" onclick="switchDocByIdx(0);closeQcPicker()">
+        <div class="qc-pi-left">
+          <div class="qc-pi-no">JYBG20260509001</div>
+          <div class="qc-pi-info">整机调试 · 变频器SB200-11T4T · 2026-05-09</div>
+        </div>
+        <div class="qc-pi-right">
+          <span class="qc-pi-result fail">不合格</span>
+          <span class="qc-pi-current">当前</span>
+        </div>
+      </div>
+      <div class="qc-picker-item" onclick="switchDocByIdx(1);closeQcPicker()">
+        <div class="qc-pi-left">
+          <div class="qc-pi-no">JYBG20260510001</div>
+          <div class="qc-pi-info">整机调试 · 变频器SB200-11T4T · 2026-05-10</div>
+        </div>
+        <div class="qc-pi-right">
+          <span class="qc-pi-result pass">合格</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 检验项目详情弹窗 -->
+<div class="ipi-modal" id="ipiModal" onclick="if(event.target===this)closeIpi()">
+  <div class="ipi-modal-box">
+    <div class="ipi-modal-hd">
+      <div class="ipi-modal-title" id="ipiModalTitle"></div>
+    </div>
+    <div class="ipi-modal-tabs">
+      <div style="display:flex;gap:20px">
+        <div class="ipi-modal-tab active" onclick="switchIpiTab(1,this)">检验结果</div>
+        <div class="ipi-modal-tab" onclick="switchIpiTab(0,this)">项目详情</div>
+      </div>
+      <span class="ipi-modal-close" onclick="closeIpi()">&times;</span>
+    </div>
+    <div class="ipi-modal-bd" id="ipiModalBody"></div>
+  </div>
+</div>
+
+<script>
+// 切换检验单
+function switchDoc(idx){
+  document.querySelectorAll('.qc-doc').forEach(function(d){
+    d.classList.toggle('active', parseInt(d.dataset.doc)===idx);
+  });
+  var doc = document.querySelector('.qc-doc.active');
+  doc.querySelectorAll('.tab-item').forEach(function(t,i){t.classList.toggle('active', i===0)});
+  doc.querySelectorAll('.tab-panel').forEach(function(p){
+    p.classList.toggle('active', p.dataset.tab==='0');
+  });
+  document.querySelectorAll('.qc-picker-item').forEach(function(item,i){
+    item.classList.toggle('current', i===idx);
+    var cur = item.querySelector('.qc-pi-current');
+    if(i===idx){ if(!cur){ var s=document.createElement('span');s.className='qc-pi-current';s.textContent='当前';item.querySelector('.qc-pi-right').appendChild(s); }}
+    else{ if(cur) cur.remove(); }
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function switchDocByIdx(idx){ switchDoc(idx); }
+function openQcPicker(){ document.getElementById('qcPickerMask').classList.add('show'); document.body.style.overflow='hidden'; }
+function closeQcPicker(){ document.getElementById('qcPickerMask').classList.remove('show'); document.body.style.overflow=''; }
+// 切换tab(限定在当前活跃的qc-doc内)
+function switchTab(idx, el){
+  var doc = el.closest('.qc-doc');
+  doc.querySelectorAll('.tab-item').forEach(function(t){t.classList.remove('active')});
+  el.classList.add('active');
+  doc.querySelectorAll('.tab-panel').forEach(function(p){
+    p.classList.toggle('active', parseInt(p.dataset.tab)===idx);
+  });
+}
+
+// ========== 检验项目详情数据 ==========
+var IPI_DATA = [
+  {idx:1,name:'主级片宽',type:'quant',level:'一般',result:'pass',std:'420',low:'419.5',up:'420.5',unit:'mm',
+    vals:[{v:'420.1',pass:true}],
+    method:'卡尺测量',device:'数显卡尺',aql:'GB2828-Ⅰ-AQL1.0',qty:1,acre:'0/1',destruct:'否'},
+  {idx:2,name:'主级厚度偏差',type:'quant',level:'严重缺陷',result:'fail',std:'0',low:'-0.3',up:'+0.3',unit:'mm',
+    vals:[{v:'+0.45',pass:false},{v:'+0.12',pass:true},{v:'+0.28',pass:true}],
+    method:'卡尺测量',device:'数显千分尺',aql:'GB2828-Ⅱ-AQL0.65',qty:3,acre:'0/1',destruct:'否',
+    desc:'主级厚度偏差实测最大+0.45mm，超出上限值+0.3mm，叠片厚度不一致会导致铁芯磁路异常，需返修。',
+    remark:'已转返修工艺处理，待返修后重新送检。',
+    attachs:[{name:'缺陷部位实拍.jpg',size:'1.2MB',type:'JPG'},{name:'卡尺读数.jpg',size:'0.8MB',type:'JPG'}]},
+  {idx:3,name:'主级片长',type:'quant',level:'一般',result:'pass',std:'700',low:'699',up:'701',unit:'mm',
+    vals:[{v:'700.3',pass:true},{v:'699.8',pass:true}],
+    method:'钢卷尺测量',device:'钢卷尺(1m)',aql:'GB2828-Ⅰ-AQL1.0',qty:2,acre:'0/1',destruct:'否'},
+  {idx:4,name:'铁芯外观',type:'qual',level:'一般',result:'pass',criteria:'表面平整无锈蚀',
+    method:'目视检查',device:'无',aql:'GB2828-Ⅰ-AQL1.0',qty:1,acre:'0/1',destruct:'否',
+    remark:'局部有轻微氧化痕迹，已用无水乙醇擦拭，未影响表面质量。'},
+  {idx:5,name:'叠装质量',type:'qual',level:'严重缺陷',result:'pass',criteria:'叠片整齐无错位',
+    method:'目视检查',device:'无',aql:'GB2828-Ⅱ-AQL0.65',qty:1,acre:'0/1',destruct:'否',
+    attachs:[{name:'叠装整体照片.jpg',size:'1.5MB',type:'JPG'}]},
+  {idx:6,name:'接缝对齐度',type:'qual',level:'一般',result:'pass',criteria:'接缝平齐无错位',
+    method:'目视/塞尺',device:'塞尺',aql:'GB2828-Ⅰ-AQL1.0',qty:1,acre:'0/1',destruct:'否'},
+  {idx:7,name:'绑扎牢固性',type:'qual',level:'一般',result:'pass',criteria:'无松动、绑带均匀',
+    method:'手感+目视',device:'无',aql:'GB2828-Ⅰ-AQL1.0',qty:1,acre:'0/1',destruct:'否'},
+  {idx:8,name:'接地连接',type:'qual',level:'严重缺陷',result:'pass',criteria:'接地可靠、电阻合格',
+    method:'目视+万用表',device:'数字万用表',aql:'GB2828-Ⅱ-AQL0.65',qty:1,acre:'0/1',destruct:'否',
+    remark:'接地电阻测量0.08Ω，符合≤0.1Ω要求。'},
+  {idx:9,name:'标识完整性',type:'qual',level:'轻微',result:'pass',criteria:'标签清晰可读',
+    method:'目视检查',device:'无',aql:'GB2828-Ⅰ-AQL1.5',qty:1,acre:'0/1',destruct:'否'},
+  {idx:10,name:'包装完好性',type:'qual',level:'轻微',result:'pass',criteria:'包装无破损、防潮合格',
+    method:'目视检查',device:'无',aql:'GB2828-Ⅰ-AQL1.5',qty:1,acre:'0/1',destruct:'否'},
+  {idx:11,name:'文件齐全性',type:'qual',level:'一般',result:'pass',criteria:'合格证、检验报告齐全',
+    method:'文件核对',device:'无',aql:'GB2828-Ⅰ-AQL1.0',qty:1,acre:'0/1',destruct:'否',
+    attachs:[{name:'合格证扫描件.pdf',size:'0.4MB',type:'PDF'}]},
+  {idx:2,name:'主级厚度偏差',type:'quant',level:'严重缺陷',result:'pass',std:'0',low:'-0.3',up:'+0.3',unit:'mm',
+    vals:[{v:'+0.12',pass:true},{v:'+0.08',pass:true}],
+    isRecheck:true,prevVal:'+0.45',linkedNo:'JYBG20260509001-02',
+    method:'卡尺测量',device:'数显千分尺',aql:'GB2828-Ⅱ-AQL0.65',qty:2,acre:'0/1',destruct:'否',
+    remark:'返修后复测+0.12mm和+0.08mm，均已落入±0.3mm公差带内，判定合格。',
+    attachs:[{name:'返修后复测照片.jpg',size:'0.9MB',type:'JPG'}]}
+];
+
+function levelStyle(level){
+  if(level==='严重缺陷') return 'background:#fff1f0;color:#ff4d4f;border:1px solid #ffa39e';
+  return 'background:#fafafa;color:#86909c;border:1px solid #e8e8e8';
+}
+
+var _ipiCurIdx = -1;
+
+function openIpi(i){
+  _ipiCurIdx = i;
+  var d = IPI_DATA[i]; if(!d) return;
+  document.getElementById('ipiModalTitle').textContent = d.name;
+  // 默认显示检验结果（tab[0]=检验结果）
+  var tabs = document.querySelectorAll('.ipi-modal-tab');
+  tabs[0].classList.add('active');
+  tabs[1].classList.remove('active');
+  renderIpiTab(1);
+  document.getElementById('ipiModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function switchIpiTab(idx, el){
+  var tabs = document.querySelectorAll('.ipi-modal-tab');
+  tabs.forEach(function(t){t.classList.remove('active')});
+  el.classList.add('active');
+  renderIpiTab(idx);
+}
+
+function renderIpiTab(tabIdx){
+  var d = IPI_DATA[_ipiCurIdx]; if(!d) return;
+  var bd = document.getElementById('ipiModalBody');
+
+  if(tabIdx === 0){
+    // 项目详情
+    var html = '<div class="ipi-section">'
+      + '<div class="ipi-section-hd"><span class="dot"></span>基本信息</div>'
+      + '<div class="ipi-section-bd">'
+      + '<div class="dc-row"><span class="dc-label">分析方法</span><span class="dc-val">'+(d.type==='quant'?'定量分析':'定性分析')+'</span></div>'
+      + '<div class="dc-row"><span class="dc-label">检验方法</span><span class="dc-val">'+d.method+'</span></div>'
+      + '<div class="dc-row"><span class="dc-label">检验仪器</span><span class="dc-val">'+d.device+'</span></div>'
+      + '<div class="dc-row"><span class="dc-label">破坏性</span><span class="dc-val">'+d.destruct+'</span></div>'
+      + '<div class="dc-row"><span class="dc-label">抽样数量</span><span class="dc-val">'+d.qty+'</span></div>'
+      + '<div class="dc-row"><span class="dc-label">ac/re</span><span class="dc-val">'+d.acre+'</span></div>';
+
+    if(d.type==='quant'){
+      html += '<div style="height:1px;background:#f0f0f0;margin:8px 0"></div>'
+        + '<div class="dc-row"><span class="dc-label">标准值</span><span class="dc-val" style="color:#1890ff;font-weight:600">'+d.std+' '+d.unit+'</span></div>'
+        + '<div class="dc-row"><span class="dc-label">下限值</span><span class="dc-val">'+d.low+' '+d.unit+'</span></div>'
+        + '<div class="dc-row"><span class="dc-label">上限值</span><span class="dc-val">'+d.up+' '+d.unit+'</span></div>';
+    } else if(d.criteria){
+      html += '<div style="height:1px;background:#f0f0f0;margin:8px 0"></div>'
+        + '<div class="dc-row"><span class="dc-label">判定标准</span><span class="dc-val" style="text-align:left">'+d.criteria+'</span></div>';
+    }
+    if(d.linkedNo){
+      html += '<div style="height:1px;background:#f0f0f0;margin:8px 0"></div>'
+        + '<div class="dc-row"><span class="dc-label">关联初检项</span><span class="dc-val" style="color:#1890ff">'+d.linkedNo+'</span></div>';
+    }
+    html += '</div></div>';
+    bd.innerHTML = html + '<div style="height:16px"></div>';
+
+  } else {
+    // 检验结果
+    var resultLabel = d.result==='pass' ? '合格' : '不合格';
+    var resultBg = d.result==='pass' ? 'background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f' : 'background:#fff1f0;color:#ff4d4f;border:1px solid #ffa39e';
+
+    var passCount = 0, failCount = 0;
+    if(d.type==='quant' && d.vals){
+      for(var vi=0;vi<d.vals.length;vi++){ if(d.vals[vi].pass) passCount++; else failCount++; }
+    } else {
+      passCount = d.result==='pass' ? 1 : 0;
+      failCount = d.result==='pass' ? 0 : 1;
+    }
+
+    var html = '<div class="ipi-section">'
+      + '<div class="ipi-section-hd"><span class="dot" style="background:'+(d.result==='pass'?'#52c41a':'#ff4d4f')+'"></span>检验结果</div>'
+      + '<div class="ipi-section-bd">';
+
+    html += '<div class="dc-row"><span class="dc-label">合格数量</span><span class="dc-val" style="color:#52c41a">'+passCount+'</span></div>'
+      + '<div class="dc-row"><span class="dc-label">不合格数量</span><span class="dc-val" style="color:'+(failCount>0?'#ff4d4f':'#1d2129')+'">'+failCount+'</span></div>'
+      + '<div class="dc-row"><span class="dc-label">检验结果</span><span style="display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:4px;'+resultBg+'">'+resultLabel+'</span></div>';
+
+    // 定量：检测值列表
+    if(d.type==='quant' && d.vals){
+      html += '<div style="height:1px;background:#f0f0f0;margin:8px 0"></div>'
+        + '<div style="font-size:12px;color:#86909c;margin-bottom:6px">检测值 <span style="font-size:11px">('+d.vals.length+'个)</span></div>';
+      for(var vi=0; vi<d.vals.length; vi++){
+        var v = d.vals[vi];
+        var vLabel = v.pass ? '合格' : '不合格';
+        var vBg = v.pass ? 'background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f' : 'background:#fff1f0;color:#ff4d4f;border:1px solid #ffa39e';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:6px;margin-bottom:4px;'
+          + (v.pass ? 'background:#fafafa;border:1px solid #f0f0f0' : 'background:#fff8f7;border:1px solid #ffd6d4') + '">'
+          + '<span style="font-size:13px;font-weight:600;color:'+(v.pass?'#52c41a':'#ff4d4f')+'">'+v.v+' '+d.unit+'</span>'
+          + '<span style="font-size:11px;font-weight:600;padding:1px 8px;border-radius:3px;'+vBg+'">'+(v.pass?'&#10003;':'&#10005;')+' '+vLabel+'</span>'
+          + '</div>';
+      }
+    }
+
+    // 不合格描述
+    html += '<div style="height:1px;background:#f0f0f0;margin:8px 0"></div>'
+      + '<div style="font-size:12px;color:#86909c;margin-bottom:4px">不合格描述</div>';
+    if(d.desc){
+      html += '<div class="ipi-desc-box">'+d.desc+'</div>';
+    } else {
+      html += '<div style="font-size:12px;color:#c0c0c0;padding:8px 10px;background:#fafafa;border-radius:6px">无</div>';
+    }
+
+    // 备注
+    html += '<div style="margin-top:8px"><div style="font-size:12px;color:#86909c;margin-bottom:4px">备注</div>';
+    if(d.remark){
+      html += '<div class="ipi-remark-box">'+d.remark+'</div>';
+    } else {
+      html += '<div style="font-size:12px;color:#c0c0c0;padding:8px 10px;background:#fafafa;border-radius:6px">无</div>';
+    }
+    html += '</div>';
+
+    // 附件
+    html += '<div style="margin-top:8px"><div style="font-size:12px;color:#86909c;margin-bottom:4px">附件 <span style="font-weight:400">('+(d.attachs?d.attachs.length:0)+')</span></div>';
+    if(d.attachs && d.attachs.length){
+      var typeColor = {JPG:'#fff7e6;color:#fa8c16',PDF:'#e6f7ff;color:#1890ff',XLS:'#f6ffed;color:#52c41a',PNG:'#fff7e6;color:#fa8c16'};
+      var items = d.attachs.map(function(a){
+        var c = typeColor[a.type] || '#f5f6fa;color:#86909c';
+        return '<div class="ipi-attach-item"><div class="ipi-attach-thumb" style="background:'+c+'">'+a.type+'</div><div class="ipi-attach-meta"><div class="ipi-attach-n">'+a.name+'</div><div class="ipi-attach-s">'+a.size+'</div></div><span class="ipi-attach-action">预览</span></div>';
+      }).join('');
+      html += '<div class="ipi-attach-grid">'+items+'</div>';
+    } else {
+      html += '<div style="font-size:12px;color:#c0c0c0;padding:8px 10px;background:#fafafa;border-radius:6px">无</div>';
+    }
+    html += '</div>';
+
+    html += '</div></div>';
+    bd.innerHTML = html + '<div style="height:16px"></div>';
+  }
+}
+
+function closeIpi(){
+  document.getElementById('ipiModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+</script>
+</body>
+</html>

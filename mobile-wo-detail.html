@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>工单基本信息</title>
+<link rel="stylesheet" href="mobile-common.css">
+<style>
+.wo-summary{background:linear-gradient(135deg,#1890ff 0%,#36cfc9 100%);padding:18px 16px 20px;color:#fff}
+.wo-no{font-size:11px;opacity:.8;margin-bottom:4px}
+.wo-product{font-size:17px;font-weight:700;margin-bottom:3px}
+.wo-meta{font-size:12px;opacity:.85}
+.wo-tag{display:inline-block;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:3px;font-size:11px;margin-top:8px}
+
+.wo-card{background:#fff;border-radius:10px;margin:12px 16px;border:1px solid #f0f0f0;overflow:hidden}
+.wo-card-hd{padding:12px 14px 8px;border-bottom:1px solid #f5f5f5;font-size:14px;font-weight:600;color:#1d2129;display:flex;align-items:center;gap:6px}
+.wo-card-hd .dot{display:inline-block;width:3px;height:14px;border-radius:2px;background:#1890ff}
+.wo-card-bd{padding:6px 14px 12px}
+.wo-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid #fafafa}
+.wo-row:last-child{border-bottom:none}
+.wo-label{color:#86909c;font-size:12px;white-space:nowrap;margin-right:10px;flex-shrink:0}
+.wo-value{color:#1d2129;font-size:12px;text-align:right;font-weight:500;flex:1;word-break:break-all}
+.wo-value.muted{color:#c0c0c0;font-weight:400}
+.wo-value.blue{color:#1890ff}
+.wo-value.green{color:#52c41a}
+
+.wo-remark{padding:6px 14px 14px}
+.wo-remark-box{background:#fafafa;border-radius:6px;padding:10px 12px;font-size:12px;color:#1d2129;line-height:1.6;min-height:48px}
+.wo-remark-box.empty{color:#c0c0c0;text-align:center;padding:14px 12px}
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="status-bar"><span class="time">9:41</span><span>📶 🔋</span></div>
+  <div class="nav-bar">
+    <div class="back" onclick="location.href='mobile-overview.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="title">工单基本信息</div>
+    <div class="action"></div>
+  </div>
+
+  <!-- 工单摘要头 -->
+  <div class="wo-summary">
+    <div class="wo-no">工单编号 WO202605170003</div>
+    <div class="wo-product">变频调速用干式整流变压器</div>
+    <div class="wo-meta">CT03001-000311 / ZTSGF-1900/10-0.69</div>
+    <span class="wo-tag">普通生产工单</span>
+  </div>
+
+  <!-- 产品信息 -->
+  <div class="wo-card">
+    <div class="wo-card-hd"><span class="dot"></span>产品信息</div>
+    <div class="wo-card-bd">
+      <div class="wo-row"><span class="wo-label">产品名称</span><span class="wo-value">变频调速用干式整流变压器</span></div>
+      <div class="wo-row"><span class="wo-label">产品编码</span><span class="wo-value">CT03001-000311</span></div>
+      <div class="wo-row"><span class="wo-label">产品型号</span><span class="wo-value">ZTSGF-1900/10-0.69</span></div>
+      <div class="wo-row"><span class="wo-label">产品规格</span><span class="wo-value">1900</span></div>
+      <div class="wo-row"><span class="wo-label">产品图号</span><span class="wo-value">63219</span></div>
+      <div class="wo-row"><span class="wo-label">产品单位</span><span class="wo-value">台</span></div>
+      <div class="wo-row"><span class="wo-label">产品属性</span><span class="wo-value">成品</span></div>
+      <div class="wo-row"><span class="wo-label">材质</span><span class="wo-value">有取全铝</span></div>
+      <div class="wo-row"><span class="wo-label">容量</span><span class="wo-value muted">请填写容量</span></div>
+    </div>
+  </div>
+
+  <!-- 工单信息 -->
+  <div class="wo-card">
+    <div class="wo-card-hd"><span class="dot" style="background:#52c41a"></span>工单信息</div>
+    <div class="wo-card-bd">
+      <div class="wo-row"><span class="wo-label">工单编号</span><span class="wo-value">WO202605170003</span></div>
+      <div class="wo-row"><span class="wo-label">工单类型</span><span class="wo-value">普通生产工单</span></div>
+      <div class="wo-row"><span class="wo-label">需求数量</span><span class="wo-value">1</span></div>
+      <div class="wo-row"><span class="wo-label">需求日期</span><span class="wo-value">2026-06-02</span></div>
+      <div class="wo-row"><span class="wo-label">计划开始日期</span><span class="wo-value">2026-05-17</span></div>
+      <div class="wo-row"><span class="wo-label">入库仓库</span><span class="wo-value">成品仓</span></div>
+    </div>
+  </div>
+
+  <!-- 业务来源 -->
+  <div class="wo-card">
+    <div class="wo-card-hd"><span class="dot" style="background:#fa8c16"></span>业务来源</div>
+    <div class="wo-card-bd">
+      <div class="wo-row"><span class="wo-label">合同号</span><span class="wo-value">XW-TB-260513-2</span></div>
+      <div class="wo-row"><span class="wo-label">工程号</span><span class="wo-value">G202605001</span></div>
+      <div class="wo-row"><span class="wo-label">工单来源</span><span class="wo-value">销售订单</span></div>
+      <div class="wo-row"><span class="wo-label">来源单据号</span><span class="wo-value blue">SO20260515000002</span></div>
+      <div class="wo-row"><span class="wo-label">销售状态</span><span class="wo-value green">正常</span></div>
+      <div class="wo-row"><span class="wo-label">客户名称</span><span class="wo-value">希望森兰科技股份有限公司</span></div>
+    </div>
+  </div>
+
+  <!-- 备注 -->
+  <div class="wo-card">
+    <div class="wo-card-hd"><span class="dot" style="background:#86909c"></span>备注</div>
+    <div class="wo-remark">
+      <div class="wo-remark-box empty">暂无备注</div>
+    </div>
+  </div>
+
+  <div class="bottom-safe"></div>
+</div>
+</body>
+</html>
